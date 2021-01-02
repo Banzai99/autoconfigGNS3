@@ -32,10 +32,9 @@ network_inc=1
 inc=1
 
 for key in topologie:
-    f=open("config_R"+str(inc)+".txt", "a")
+    f=open("config_R"+str(inc)+".txt", "w")
 
-    f.write("""
-no ip domain lookup\n
+    f.write("""no ip domain lookup
 ip arp proxy disable\n""")
 
 
@@ -48,30 +47,27 @@ ip arp proxy disable\n""")
         except:
             pass
 
-        if !exist:
+        if not exist:
             address=network_inc
+            network[key] = {}
             network[key][node]=network_inc+1
             network_inc+=4
         else:
             address=network[node][key]
 
 
-        f.write(f"""
-interface {topologie[key][node]}\n
-  no shutdown\n
-  ip address 172.30.128.{address} 255.255.255.252\n
-    ip ospf 4 area 0\n
-    mpls ip\n
-exit\n
-            """)
+        f.write(f"""interface {topologie[key][node]}
+        no shutdown
+        ip address 172.30.128.{address} 255.255.255.252
+        ip ospf 4 area 0
+        mpls ip
+        exit\n""")
 
-    f.write(f"""
-router ospf 4\n
-  router-id 0.0.0.{inc}\n
-  redistribute connected subnets\n
-exit\n
-mpls ldp discovery targeted-hello  accept\n
-ip cef\n
-        """)        
+    f.write(f"""router ospf 4
+router-id 0.0.0.{inc}
+redistribute connected subnets
+exit
+mpls ldp discovery targeted-hello  accept
+ip cef""")
     f.close()
-    inc++
+    inc += 1
