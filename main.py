@@ -34,7 +34,8 @@ inc=1
 for key in topologie:
     f=open("config_R"+str(inc)+".txt", "w")
 
-    f.write("""no ip domain lookup
+    f.write("""configure terminal\n
+no ip domain lookup\n
 ip arp proxy disable\n""")
 
 
