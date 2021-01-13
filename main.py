@@ -12,7 +12,10 @@ if __name__ == '__main__':
     backbone = {}
     edges = {}
     custEdges = {}
+    nodeName = {}
+
     for node in nodes:
+    	nodeName[node.node_id]=node.node_name
         if node.name[0:2] == "PE":
             edges[node.node_id] = {}
         if node.name[0] == "P":
@@ -72,44 +75,57 @@ if __name__ == '__main__':
         for node in custEdges[router]:
             custEdges[router][node][1] = network[router][node]
 
-    # network={}
-    # network_inc=1
-    # inc=1
-    # for router in backbone:
-    #     print("topo key", backbone[router])
-    #     f=open("config_R"+str(inc)+".txt", "w")
-    #     network[router] = {}
-    #     f.write("""configure terminal\n
-    #     no ip domain lookup\n
-    #     ip arp proxy disable\n""")
-    #     for node in backbone[router]:
-    #         address = 0
-    #         exist = False
-    #         try:
-    #             a = network[node][router]
-    #             exist = True
-    #         except:
-    #             pass
-    #         if not exist:
-    #             address = network_inc
-    #             network[router][node] = network_inc + 1
-    #             print("network ",network)
-    #             network_inc += 4
-    #         else:
-    #             address = network[node][router]
-    #         f.write(f"""interface {backbone[router][node]}
-    #         no shutdown
-    #         ip address 172.30.128.{address} 255.255.255.252
-    #         ip ospf 4 area 0
-    #         mpls ip
-    #         exit\n""")
 
-    #     f.write(f"""router ospf 4
-    #     router-id 0.0.0.{inc}
-    #     redistribute connected subnets
-    #     exit
-    #     mpls ldp discovery targeted-hello  accept
-    #     ip cef
-    #     exit""")
-    #     f.close()
-    #     inc += 1
+
+    inc = 1
+    for router in backbone:
+        f = open("config_" + nodeName[router] + ".txt", "w")
+        f.write("""configure terminal\n
+        no ip domain lookup\n
+        ip arp proxy disable\n""")
+
+        for node in backbone[router]:
+	        f.write(f"""interface {backbone[router][node][0]}
+	        no shutdown
+	        ip address {backbone[router][node][1]} 255.255.255.252
+	        ip ospf 4 area 0
+	        mpls ip
+	    	exit\n""")
+
+        f.write(f"""router ospf 4
+        router-id 0.0.0.{inc}
+        redistribute connected subnets
+        exit
+        mpls ldp discovery targeted-hello  accept
+        ip cef
+        exit""")
+
+        f.close()
+        inc += 1
+
+    vrfRD = {}
+    incRD = 1
+    for router in edges:
+    	f = open("config_" + nodeName[router] + ".txt", "w")
+    	f.write(f"""configure terminal
+        interface lo/0
+        no shutdown
+        ip address {edges[router]['lb']} 255.255.255.255
+        exit""")
+
+        for node in edges[router]:
+        	RD = 0
+        	vrf = input("A quel vrf appartient le routeur " + nodeName[node] +  " ?")
+        	if(vrf in vrfRD):
+        		RD = vrfRD[vrf]
+        	else:
+        		RD = incRD
+        		incRD += 1
+        	f.write(f"""
+        		ip vrf {vrf}
+        		rd 1:{vrfRD[vrf]}
+        		route import 1:{vrfRD[vrf]}
+        		route export 1:{vrfRD[vrf]}
+        		exit
+        		""")
+        f.close()
