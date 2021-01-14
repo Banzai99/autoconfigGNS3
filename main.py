@@ -119,21 +119,25 @@ configure terminal
                 exit""")
 
         for node in edges[router]:
-            if node == "lb":
-                continue
-            RD = 0
-            vrf = input("A quel vrf appartient le routeur " + nodeName[node] + " ?")
-            if vrf in vrfRD:
-                RD = vrfRD[vrf]
-            else:
-                RD = incRD
-                incRD += 1
-                vrfRD[vrf] = RD
-            f.write(f"""
-ip vrf {vrf}
-        rd 1:{vrfRD[vrf]}
-        route import 1:{vrfRD[vrf]}
-        route export 1:{vrfRD[vrf]}
-        exit
-""")
+        	RD = 0
+        	vrf = input("A quel vrf appartient le routeur " + nodeName[node] +  " ?")
+        	if(vrf in vrfRD):
+        		RD = vrfRD[vrf]
+        	else:
+        		RD = incRD
+        		vrfRD[vrf]=RD
+        		incRD += 1
+        	f.write(f"""
+        		ip vrf {vrf}
+        		rd 1:{vrfRD[vrf]}
+        		route import 1:{vrfRD[vrf]}
+        		route export 1:{vrfRD[vrf]}
+        		exit
+
+        		interface {edges[router][node][0]}
+        		ip vrf forwarding {vrf}
+        		ip add {edges[router][node][1]} 255.255.255.252
+        		no shutdown
+        		exit
+        		""")
         f.close()
