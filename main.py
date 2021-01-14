@@ -6,6 +6,8 @@ if __name__ == '__main__':
     lab = gns3fy.Project(name="tpmplsvpn", connector=gns3_server)
     lab.get()
 
+"""----------------prétraitement----------------"""
+
     liens = lab.links
     nodes = lab.nodes
 
@@ -44,6 +46,10 @@ if __name__ == '__main__':
                     custEdges[router][link.nodes[0]["node_id"]] = [link_side["label"]["text"], ""]
                 elif (router == link_side["node_id"]) and (router == link.nodes[0]["node_id"]):
                     custEdges[router][link.nodes[1]["node_id"]] = [link_side["label"]["text"], ""]
+"""-------------------------------------------------------"""
+
+
+"""----------------attribution des adresses IP----------------"""
 
     network = {}
     ipRange = "172.30.128."
@@ -65,12 +71,15 @@ if __name__ == '__main__':
     subnet = 1
     loopBack = "172.16.1."
     incLb = 1
+    
 
     for router in edges:
+        incIP = 2
         for node in edges[router]:
-            edges[router][node][1] = ipRange + str(subnet) + ".2"
+            edges[router][node][1] = ipRange + str(subnet) + "." + str(incIP)
             network[node] = {}
             network[node][router] = ipRange + str(subnet) + ".1"
+            incIP += 1
         edges[router]["lb"] = loopBack + str(incLb)
         incLb += 1
         subnet += 1
@@ -107,6 +116,10 @@ exit""")
 
         f.close()
         inc += 1
+
+"""-------------------------------------------------------"""
+
+"""----------------attribution et configuration des VRF----------------"""
 
     vrfRT = {}
     inc = 1
@@ -159,3 +172,4 @@ configure terminal
 						""")
         f.close()
 
+"""-------------------------------------------------------"""
