@@ -1,4 +1,5 @@
 import gns3fy
+import json
 
 if __name__ == '__main__':
     gns3_server = gns3fy.Gns3Connector("http://localhost:3080")
@@ -107,8 +108,19 @@ exit""")
         f.close()
         inc += 1
 
-    vrfRD = {}
-    incRD = 1
+    vrfRT = {}
+    inc = 1
+
+    conf = {}
+    with open('conf.json') as confFile:
+    	conf = json.load(confFile)
+    for vrf in conf:
+    	conf[vrf]["id"] = inc*100
+    	conf[vrf]["rt"] = 1
+    	vrfRT[vrf] = []
+    	inc += 1
+
+
     for router in edges:
         f = open("config_" + nodeName[router] + ".txt", "a")
         f.write(f"""
@@ -119,25 +131,31 @@ configure terminal
                 exit""")
 
         for node in edges[router]:
-        	RD = 0
-        	vrf = input("A quel vrf appartient le routeur " + nodeName[node] +  " ?")
-        	if(vrf in vrfRD):
-        		RD = vrfRD[vrf]
-        	else:
-        		RD = incRD
-        		vrfRD[vrf]=RD
-        		incRD += 1
-        	f.write(f"""
+        	RD = 1
+        	for vrf in conf:
+        		if node in conf[vrf]["CE"]:
+        			RT = conf[vrf]["id"]+conf[vrf]["rt"]
+        			vrfRT[vrf].append(RT)
+		        	f.write(f"""
         		ip vrf {vrf}
-        		rd 1:{vrfRD[vrf]}
-        		route import 1:{vrfRD[vrf]}
-        		route export 1:{vrfRD[vrf]}
-        		exit
-
-        		interface {edges[router][node][0]}
-        		ip vrf forwarding {vrf}
-        		ip add {edges[router][node][1]} 255.255.255.252
-        		no shutdown
+        		rd 1:{RD}
+        		route export 1:{RT}
         		exit
         		""")
+					RD += 1
+					conf[vrf]["rt"] += 1
+		f.close()
+
+	for router in edges:
+		f = open("config_" + nodeName[router] + ".txt", "a")
+		for node in edges[router]:
+			for vrf in conf:
+				if node in conf[vrf]["CE"]:
+					for RT in vrfRT[vrf]:
+						f.write(f"""
+							ip vrf {vrf}
+							route import 1:{RT}
+							exit
+						""")
         f.close()
+
