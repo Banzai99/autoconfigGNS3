@@ -1,7 +1,26 @@
-{"clientA": {
-  "CE": ["TC_CE1", "TC_CE2"]
+{
+  "clientA": {
+    "CE": [
+      "TC_CE1",
+      "TC_CE2"
+    ]
   },
-  "clientB": {"CE": ["IT_CE1", "IT_CE2"]
+  "clientB": {
+    "CE": [
+      "IT_CE1",
+      "IT_CE2"
+    ]
   },
-  "clientC": {"CE": ["IT_CE1", "TC_CE1", "GCU_CE1"]}
+  "clientC": {
+    "CE": [
+      "TC_CE1",
+      "GCU_CE1"
+    ]
+  },
+  "clientD": {
+    "CE": [
+      "IT_CE1",
+      "GCU_CE1"
+    ]
+  }
 }
