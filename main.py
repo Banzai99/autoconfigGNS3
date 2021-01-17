@@ -122,12 +122,13 @@ exit""")
 
     vrfRT = {}
     inc = 1
+    vrfPE = {}
 
     conf = {}
     with open('conf.json') as confFile:
         conf = json.load(confFile)
     for vrf in conf:
-        conf[vrf]["id"] = inc*100
+        conf[vrf]["id"] = inc
         conf[vrf]["rt"] = 1
         vrfRT[vrf] = []
         inc += 1
@@ -148,7 +149,15 @@ configure terminal
                 continue
             for vrf in conf:
                 if nodeName[node] in conf[vrf]["CE"]:
-                    RT = conf[vrf]["id"]+conf[vrf]["rt"]
+                    
+                    if router in vrfPE:
+                        if vrf not in vrfPE[router]:
+                            vrfPE[router].append(vrf)
+                    else:
+                        vrfPE[vrf]=[]
+                        vrfPE[vrf].append(vrf)
+
+                    RT = conf[vrf]["id"]*100+conf[vrf]["rt"]
                     vrfRT[vrf].append(RT)
                     f.write(f"""
         ip vrf {vrf}
@@ -176,3 +185,78 @@ configure terminal
         f.close()
 
 """-------------------------------------------------------"""
+
+"""----------------protocole CE-PE----------------"""
+
+    for router in custEdges:
+        f = open("config_" + nodeName[router] + ".txt", "a")
+        for vrf in conf:
+            if nodeName[router] in conf[vrf]["CE"]:
+                f.write(f"""
+                eigrp ?????
+                    network 10.0.0.0
+                    no auto-summary
+                    exit
+                """) #rajouter automatisation des network ?
+        f.close()
+
+    for router in edges:
+        f = open("config_" + nodeName[router] + ".txt", "a")
+        for node in edges[router]:
+            if node == "lb":
+                continue
+            for vrf in conf:
+                if nodeName[node] in conf[vrf]["CE"]:
+                    f.write(f"""
+            eigrp {conf[vrf]["id"]}
+                adresse-family ipv4 vrf {vrf}
+                    autonomous-system ???
+                exit
+            """)
+        f.close()
+
+"""-------------------------------------------------------"""
+
+"""----------------protocole MP-BGP----------------"""
+
+    for router in edges:
+        f = open("config_" + nodeName[router] + ".txt", "a")
+        for neighbor in edges:
+            if neighbor!=router:
+                f.write(f"""
+                router bgp 1?????
+                    neighbor {edges[router]["lb"]} remote-as ????
+                    neighbor {edges[router]["lb"]} update-source Lo0
+                    address-family vpnv4
+                        neighbor {edges[router]["lb"]} activate
+                        neighbor {edges[router]["lb"]} send-community extended
+                        exit
+                    exit
+                """)
+
+"""-------------------------------------------------------"""
+
+"""----------------redistribution respective des préfixes (EIGRP -> BGP + BGP -> EIGRP)----------------"""
+
+for router in vrfPE:
+    f = open("config_" + nodeName[router] + ".txt", "a")
+        for vrf in vrfPE[router]:
+            f.write(f"""
+            router bgp 1
+                addresse-family ipv4 brf {vrf}
+                    redistribute eirgrp 1?? metric 1???
+                    exit
+                exit
+                """)
+    f.close()
+
+for router in vrfPE:
+     f = open("config_" + nodeName[router] + ".txt", "a")
+        for vrf in vrfPE[router]:
+            f.write(f"""
+            router eigrp 1???
+                address-family ipv4 vrf {vrf}
+                    redistribute bgp 1 metric 
+                    exit
+                exit
+            """)
