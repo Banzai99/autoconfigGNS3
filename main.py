@@ -238,7 +238,6 @@ configure terminal
             f.write(f"""
                 router eigrp 1
                     address-family ipv4 vrf {vrf} autonomous-system 1
-                        network 10.0.0.0
                         no auto-summary
                     exit
                 """)
