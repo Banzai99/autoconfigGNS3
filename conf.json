@@ -11,16 +11,7 @@
       "IT_CE2"
     ]
   },
-    "clientC": {
-    "CE": [
-      "TC_CE1",
-      "GCU_CE1"
-    ]
-  },
-    "clientD": {
-    "CE": [
-      "IT_CE1",
-      "GCU_CE1"
-    ]
+  "siteA": {
+    "CE": ["GCU_CE1"]
   }
 }

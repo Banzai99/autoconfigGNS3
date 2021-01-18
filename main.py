@@ -219,6 +219,43 @@ configure terminal
 
     # """-------------------------------------------------------"""
 
+   # """----------------site partagé----------------"""
+
+   shareWebsite = {}
+    with open('site_partagé.json') as shareFile:
+        shareWebsite = json.load(shareFile)
+
+    rtImp = 1
+    for router in custEdges:
+        for vrf in shareWebsite:
+            if nodeName[router] in shareWebsite[vrf]:
+                for PE in shareWebsite[vrf][nodeName[router]]:
+                    if len(vrfRT[vrf]) == 1:
+                        vrfRT[vrf].append(rtImp)
+                        rtImp += 1
+                    f = open("config_" + nodeName[PE] + ".txt", "a")
+                    f.write(f"""
+        ip vrf {vrf}
+            route-target import 1:{vrfRT[vrf][0]}
+            route-target export 1:{vrfRT[vrf][1]}
+            exit
+            """)
+                    f.close()
+
+    for router in edges:
+        for node in edges[router]:
+            for vrf in shareWebsite:
+                if node in shareWebsite[vrf]:
+                    f = open("config_" + nodeName[router] + ".txt", "a")
+                    f.write(f"""
+        ip vrf {vrf}
+            route-target import 1:{vrfRT[vrf][1]}
+            exit
+            """)
+                    f.close()
+
+    # """-------------------------------------------------------"""
+
     # """----------------protocole CE-PE----------------"""
     for router in custEdges:
         f = open("config_" + nodeName[router] + ".txt", "a")
