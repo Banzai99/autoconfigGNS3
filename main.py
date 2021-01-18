@@ -221,32 +221,39 @@ configure terminal
 
    # """----------------site partagé----------------"""
 
-   shareWebsite = {}
+    shareWebsite = {}
     with open('site_partagé.json') as shareFile:
         shareWebsite = json.load(shareFile)
 
     rtImp = 1
     for router in custEdges:
         for vrf in shareWebsite:
-            if nodeName[router] in shareWebsite[vrf]:
-                for PE in shareWebsite[vrf][nodeName[router]]:
-                    if len(vrfRT[vrf]) == 1:
-                        vrfRT[vrf].append(rtImp)
-                        rtImp += 1
-                    f = open("config_" + nodeName[PE] + ".txt", "a")
-                    f.write(f"""
-        ip vrf {vrf}
-            route-target import 1:{vrfRT[vrf][0]}
-            route-target export 1:{vrfRT[vrf][1]}
-            exit
-            """)
-                    f.close()
+            if nodeName[router] in list(shareWebsite[vrf].values())[0]:
+                for PE in edges:
+                    if router in edges[PE]:
+                        for vrfCE in conf:
+                            if nodeName[router] in conf[vrfCE]["CE"]:
+                                if len(vrfRT[vrf]) == 1:
+                                    vrfRT[vrf].append(rtImp)
+                                    rtImp += 1
+                                f = open("config_" + nodeName[PE] + ".txt", "a")
+                                print(nodeName[PE])
+                                f.write(f"""
+                    ip vrf {vrfCE}
+                        route-target import 1:{vrfRT[vrf][0]}
+                        route-target export 1:{vrfRT[vrf][1]}
+                        exit
+                        """)
+                                f.close()
 
     for router in edges:
         for node in edges[router]:
             for vrf in shareWebsite:
-                if node in shareWebsite[vrf]:
+                if node == "lb":
+                    continue
+                if nodeName[node] in shareWebsite[vrf]:
                     f = open("config_" + nodeName[router] + ".txt", "a")
+                    print(nodeName[router])
                     f.write(f"""
         ip vrf {vrf}
             route-target import 1:{vrfRT[vrf][1]}
@@ -278,7 +285,7 @@ configure terminal
                         no auto-summary
                     exit
                 """)
-    f.close()
+        f.close()
 
     # """-------------------------------------------------------"""
 
@@ -298,6 +305,7 @@ configure terminal
                         exit
                     exit
                 """)
+        f.close()
 
     # """-------------------------------------------------------"""
 
@@ -314,7 +322,7 @@ configure terminal
                     exit
                 exit
                 """)
-    f.close()
+        f.close()
 
     for router in vrfPE:
         f = open("config_" + nodeName[router] + ".txt", "a")
@@ -326,6 +334,7 @@ configure terminal
                     exit
                 exit
             """)
+        f.close()
 
     # """-------------------------------------------------------"""
 
