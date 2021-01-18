@@ -290,6 +290,8 @@ configure terminal
                 exit
             """)
 
+    # """-------------------------------------------------------"""
+
     print(backbone)
     for node in nodes:
         f = open("config_"+nodeName[node.node_id] + ".txt", "r")
