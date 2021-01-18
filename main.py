@@ -76,9 +76,9 @@ if __name__ == '__main__':
     for router in edges:
         incIP = 2
         for node in edges[router]:
-            edges[router][node][1] = ipRange + str(subnet) + "." + str(incIP)
+            edges[router][node][1] = ipRange + str(subnet) + ".1"
             network[node] = {}
-            network[node][router] = ipRange + str(subnet) + ".1"
+            network[node][router] = ipRange + str(subnet) + "." + str(incIP)
             incIP += 1
         edges[router]["lb"] = loopBack + str(incLb)
         incLb += 1
