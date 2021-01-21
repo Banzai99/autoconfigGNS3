@@ -76,9 +76,10 @@ if __name__ == '__main__':
     for router in edges:
         incIP = 2
         for node in edges[router]:
-            edges[router][node][1] = ipRange + str(subnet) + "." + str(incIP)
+            # edges[router][node][1] = ipRange + str(subnet) + "." + str(incIP)
+            edges[router][node][1] = ipRange + str(subnet) + ".1"
             network[node] = {}
-            network[node][router] = ipRange + str(subnet) + ".1"
+            network[node][router] = ipRange + str(subnet) + ".2"
             incIP += 1
         edges[router]["lb"] = loopBack + str(incLb)
         incLb += 1
@@ -226,6 +227,8 @@ configure terminal
             if nodeName[router] in conf[vrf]["CE"]:
                 f.write(f"""
                 router eigrp 1
+                    eigrp log-neighbor-changes
+                    eigrp log-neighbor-warnings
                     network 10.0.0.0
                     no auto-summary
                     exit
@@ -237,6 +240,8 @@ configure terminal
         for vrf in vrfPE[router]:
             f.write(f"""
                 router eigrp 1
+                    eigrp log-neighbor-changes
+                    eigrp log-neighbor-warnings
                     address-family ipv4 vrf {vrf} autonomous-system 1
                         network 10.0.0.0
                         no auto-summary
