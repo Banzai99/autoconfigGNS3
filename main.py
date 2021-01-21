@@ -8,7 +8,7 @@ if __name__ == '__main__':
     lab = gns3fy.Project(name="testScript", connector=gns3_server)
     lab.get()
 
-    # """----------------prétraitement----------------"""
+    # """----------------prétraitement (création des dictionnaires)----------------"""
 
     liens = lab.links
     nodes = lab.nodes
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     ipRange = "172.30.128."
     networkInc = 1
 
-    for router in backbone:
+    for router in backbone: #adresses pour le backbone
         for node in backbone[router]:
             if router in network:
                 if node in network[router]:
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     loopBack = "172.16.1."
     incLb = 1
 
-    for router in edges:
+    for router in edges: #adresses pour les PE (PE-CE)
         incIP = 1
         for node in edges[router]:
             edges[router][node][1] = ipRange + str(subnet) + "." + str(incIP)
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         incLb += 1
         subnet += 1
 
-    for router in custEdges:
+    for router in custEdges: #adresses pour les CE (PE-CE)
         for node in custEdges[router]:
             custEdges[router][node][1] = network[router][node]
 
@@ -107,7 +107,7 @@ if __name__ == '__main__':
                 exit
         """)
 
-        if router in edges:
+        if router in edges: #configuration des interfaces si le routeur est un PE
             f.write(f"""router ospf 4
         router-id 0.0.0.{inc}
         redistribute connected subnets
@@ -116,8 +116,8 @@ if __name__ == '__main__':
         exit
 mpls ldp discovery targeted-hello accept
 ip cef
-exit""")
-        else:
+exit""") 
+        else: #configuration des interfaces si le routeur est un P
             f.write(f"""router ospf 4
             router-id 0.0.0.{inc}
             redistribute connected subnets
@@ -129,14 +129,14 @@ exit""")
         f.close()
         inc += 1
 
-    for router in custEdges:
+    for router in custEdges: 
         f = open("config_" + nodeName[router] + ".txt", "w")
         f.write(f"""configure terminal
         no ip domain lookup
         ip arp proxy disable
         """)
 
-        for node in custEdges[router]:
+        for node in custEdges[router]: #configuration des interfaces pour les CE
             f.write(f"""interface {custEdges[router][node][0]}
         no shutdown
         ip address {custEdges[router][node][1]} 255.255.255.252
@@ -155,12 +155,12 @@ ip cef""")
     vrfPE = {}
 
     conf = {}
-    with open('conf.json') as confFile:
+    with open('conf.json') as confFile: #récupère la configuration des vrf
         conf = json.load(confFile)
     for vrf in conf:
-        conf[vrf]["id"] = inc
-        conf[vrf]["rt"] = 1
-        vrfRT[vrf] = []
+        conf[vrf]["id"] = inc #valeurs qui va pouvoir être incrémenté par la suite pour l'attribution des rd
+        conf[vrf]["rt"] = 1 #idem pour les rt
+        vrfRT[vrf] = [] #clé vrf associée à une liste de rt
         inc += 1
 
     for router in edges:
@@ -176,8 +176,9 @@ configure terminal
             if node == "lb":
                 continue
             for vrf in conf:
-                if nodeName[node] in conf[vrf]["CE"]:
-                    if router in vrfPE:
+                if nodeName[node] in conf[vrf]["CE"]: #attribution des rt, rd et des interfaces pour les vrf si un CE d'un PE fait bien parti de la vrf traitée
+                    
+                    if router in vrfPE: #profite ici de remplir un dictionnaire les vrf qu'un PE contient
                         if vrf not in vrfPE[router]:
                             vrfPE[router].append(vrf)
                     else:
@@ -185,7 +186,7 @@ configure terminal
                         vrfPE[router].append(vrf)
 
                     RT = conf[vrf]["id"] * 100 + conf[vrf]["rt"]
-                    vrfRT[vrf].append(RT)
+                    vrfRT[vrf].append(RT) #rajoute dans un dicionnaire pour une vrf d'un CE les exports qu'il utilise
                     f.write(f"""
         ip vrf {vrf}
             rd 1:{RD}
@@ -210,7 +211,7 @@ configure terminal
                 continue
             for vrf in conf:
                 if nodeName[node] in conf[vrf]["CE"]:
-                    for RT in vrfRT[vrf]:
+                    for RT in vrfRT[vrf]: #utilise tous les rt qui ont été utilisé pour l'export ici en import
                         f.write(f"""
         ip vrf {vrf}
             route-target import 1:{RT}
@@ -229,12 +230,12 @@ configure terminal
     rtImp = 1
     for router in custEdges:
         for vrf in shareWebsite:
-            if nodeName[router] in list(shareWebsite[vrf].values())[0]:
+            if nodeName[router] in list(shareWebsite[vrf].values())[0]: #vérifie que le CE a bien accès au site partagé
                 for PE in edges:
-                    if router in edges[PE]:
+                    if router in edges[PE]: #vérifie que le CE est bien connecté au PE
                         for vrfCE in conf:
-                            if nodeName[router] in conf[vrfCE]["CE"]:
-                                if len(vrfRT[vrf]) == 1:
+                            if nodeName[router] in conf[vrfCE]["CE"]: #rajoute les import/export nécessaire pour communiquer avec le site partagé dans la bonne vrf
+                                if len(vrfRT[vrf]) == 1: #si l'export du site partagé n'a pas encore été crée, on le crée
                                     vrfRT[vrf].append(rtImp)
                                     rtImp += 1
                                 f = open("config_" + nodeName[PE] + ".txt", "a")
@@ -252,7 +253,7 @@ configure terminal
             for vrf in shareWebsite:
                 if node == "lb":
                     continue
-                if nodeName[node] in shareWebsite[vrf]:
+                if nodeName[node] in shareWebsite[vrf]: #rajoute l'import du site partagé dans le bon CE
                     f = open("config_" + nodeName[router] + ".txt", "a")
                     print(nodeName[router])
                     f.write(f"""
@@ -268,18 +269,18 @@ configure terminal
     for router in custEdges:
         f = open("config_" + nodeName[router] + ".txt", "a")
         for vrf in conf:
-            if nodeName[router] in conf[vrf]["CE"]:
+            if nodeName[router] in conf[vrf]["CE"]: #crée un groupe eigrp pour chaque CE
                 f.write(f"""
                 router eigrp 1
                     network 10.0.0.0
                     no auto-summary
                     exit
-                """)  # rajouter automatisation des network ?
+                """)  
         f.close()
 
     for router in edges:
         f = open("config_" + nodeName[router] + ".txt", "a")
-        for vrf in vrfPE[router]:
+        for vrf in vrfPE[router]: #pour chaque vrf d'un PE, on l'associe à un groupe eigrp
             f.write(f"""
                 router eigrp 1
                     address-family ipv4 vrf {vrf} autonomous-system 1
@@ -296,7 +297,7 @@ configure terminal
     for router in edges:
         f = open("config_" + nodeName[router] + ".txt", "a")
         for neighbor in edges:
-            if neighbor != router:
+            if neighbor != router: #pour tous les voisins PE d'un PE, on instancie une communication BGP
                 f.write(f"""
                 router bgp 1
                     neighbor {edges[neighbor]["lb"]} remote-as 1
@@ -316,7 +317,7 @@ configure terminal
     print(vrfPE)
     for router in vrfPE:
         f = open("config_" + nodeName[router] + ".txt", "a")
-        for vrf in vrfPE[router]:
+        for vrf in vrfPE[router]: #pour chaque vrf d'un PE, on l'associe à la redistribution BGP
             f.write(f"""
             router bgp 1
                 address-family ipv4 vrf {vrf}
@@ -328,7 +329,7 @@ configure terminal
 
     for router in vrfPE:
         f = open("config_" + nodeName[router] + ".txt", "a")
-        for vrf in vrfPE[router]:
+        for vrf in vrfPE[router]: #pour chaque vrf d'un PE, on l'associe à la redistribution eigrp
             f.write(f"""
             router eigrp 1
                 address-family ipv4 vrf {vrf}
