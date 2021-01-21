@@ -74,12 +74,13 @@ if __name__ == '__main__':
     incLb = 1
 
     for router in edges:
-        incIP = 2
+        incIP = 1
         for node in edges[router]:
-            edges[router][node][1] = ipRange + str(subnet) + ".1"
+            edges[router][node][1] = ipRange + str(subnet) + "." + str(incIP)
+            incIP += 1
             network[node] = {}
             network[node][router] = ipRange + str(subnet) + "." + str(incIP)
-            incIP += 1
+            incIP += 3
         edges[router]["lb"] = loopBack + str(incLb)
         incLb += 1
         subnet += 1
@@ -138,7 +139,7 @@ exit""")
         for node in custEdges[router]:
             f.write(f"""interface {custEdges[router][node][0]}
         no shutdown
-        ip address {custEdges[router][node][1]} 255.255.255.248
+        ip address {custEdges[router][node][1]} 255.255.255.252
                 exit
         """)
 
@@ -193,7 +194,7 @@ configure terminal
         """)
                     f.write(f"""interface {edges[router][node][0]}
                     ip vrf forwarding {vrf}
-                    ip address {edges[router][node][1]} 255.255.255.248
+                    ip address {edges[router][node][1]} 255.255.255.252
                     no shutdown
                     exit
                     """)
@@ -282,6 +283,7 @@ configure terminal
             f.write(f"""
                 router eigrp 1
                     address-family ipv4 vrf {vrf} autonomous-system 1
+                        network 10.0.0.0
                         no auto-summary
                     exit
                 """)
